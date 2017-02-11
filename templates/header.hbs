@@ -25,7 +25,7 @@ public:
     ~{{name}}();
 
 {{#each properties}}
-    Q_PROPERTY({{type}} {{name}} READ {{name}} WRITE set_{{name}} NOTIFY {{name}}Changed)
+    Q_PROPERTY({{{type}}} {{name}} READ {{name}} WRITE set_{{name}} NOTIFY {{name}}Changed)
 {{/each}}
 
 {{#each properties}}

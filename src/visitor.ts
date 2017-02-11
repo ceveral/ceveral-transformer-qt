@@ -30,7 +30,6 @@ function recordToString(input, sourceTemplate: HandlebarsTemplateDelegate, heade
 
     let header = headerTemplate(input),
         source = sourceTemplate(input); 
-    console.log(source)
     return [
         { filename: input.filename + '.cpp', buffer: new Buffer(source) },
         { filename: input.filename + '.hpp', buffer: new Buffer(header) }
@@ -55,7 +54,7 @@ export class QtVisitor extends BaseVisitor {
 
     async parse(expression: PackageExpression): Promise<IResult[]> {
         let result: ParseResult = this.visit(expression);
-        console.log(JSON.stringify(result, null, 2));
+        //console.log(JSON.stringify(result, null, 2));
 
         let sourceBuf = await fs.readFile(Path.resolve(__dirname, "../templates/source.hbs"));
         let headerBuf = await fs.readFile(Path.resolve(__dirname, "../templates/header.hbs"));
@@ -160,7 +159,9 @@ export class QtVisitor extends BaseVisitor {
     }
 
     visitImportType(expression: ImportTypeExpression): any {
-        let file = (this.options.split ? expression.name.toLowerCase() + '.h' : expression.packageName + '.h');
+        
+        let base = Path.basename(this.options.fileName, Path.extname(this.options.fileName));
+        let file = (this.options.split ? expression.name.toLowerCase() + '.hpp' : base + '.hpp');
         this.imports.add(`"${file}"`);
 
         return { type: expression.name, ref: true };
