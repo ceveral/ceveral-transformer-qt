@@ -1,0 +1,22 @@
+{
+  "name": "ceveral-transformer-qt",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "peerDependencies": {
+    "ceveral-compile": "github:ceveral/ceveral-compiler"
+  },
+  "devDependencies": {
+    "@types/handlebars": "^4.0.31",
+    "@types/node": "^7.0.4",
+    "ceveral-compile": "github:ceveral/ceveral-compiler"
+  },
+  "dependencies": {
+    "handlebars": "^4.0.6"
+  }
+}

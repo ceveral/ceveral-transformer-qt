@@ -1,0 +1,68 @@
+#pragma once
+// Imports
+{{#each imports}}
+#include {{{this}}}
+{{/each}}
+#include <QObject>
+
+namespace {{namespace}} {
+{{#each records}} 
+
+{{#if comment}}
+/** 
+    {{name}}
+    {{comment}}
+*/
+{{/if}}
+class {{name}}: public QObject {
+
+    Q_OBJECT
+
+public:
+    explicit {{name}}(QObject *parent = 0);
+    {{name}}(const {{name}} &other);
+    {{name}} &operator=(const {{name}} &other);
+    ~{{name}}();
+
+{{#each properties}}
+    Q_PROPERTY({{type}} {{name}} READ {{name}} WRITE set_{{name}} NOTIFY {{name}}Changed)
+{{/each}}
+
+{{#each properties}}
+    {{#if comment}}
+    {{> Document}}
+    {{/if}}
+    {{#if ref}}
+    void set_{{name}}(const {{{type}}} &{{name}});
+    {{else if pointer}}
+    void set_{{name}}(std::shared_ptr<{{{type}}}> {{name}});
+    {{else}}
+    void set_{{name}}({{{type}}} {{name}});
+    {{/if}}
+    {{#if pointer}}
+    std::shared_ptr<{{{type}}}> {{name}}() const;
+    {{else}}
+    {{{type}}} {{name}}() const;
+    {{/if}}
+{{/each}}
+
+signals:
+{{#each properties}}
+    void {{name}}Changed();
+{{/each}}
+
+private:
+{{#each properties}}
+{{#if pointer}}
+    std::shared_ptr<{{{type}}}> m_{{name}};
+{{else}}
+    {{{type}}} m_{{name}};
+{{/if}}
+{{/each}}
+
+};
+
+{{/each}}
+
+
+}
