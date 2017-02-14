@@ -1,0 +1,44 @@
+#pragma once
+#include <QByteArray>
+#include <QString>
+#include <QVector>
+#include <string>
+#include <vector>
+namespace ceveral {
+
+inline QString convert(const std::string &str) {
+  return QString::fromStdString(str);
+}
+
+inline std::string convert(const QString &str) { return str.toStdString(); }
+
+inline std::vector<unsigned char> convert(const QByteArray &b) {
+  return std::vector<unsigned char>(b.begin(), b.end());
+}
+
+inline QByteArray convert(const std::vector<unsigned char> &v) {
+    return QByteArray(reinterpret_cast<const char*>(v.data()), v.size());
+}
+
+inline std::vector<std::string> convert(const QList<QString> &t) {
+    std::vector<std::string> out;
+    for (const QString &str: t) {
+        out.emplace_back(str.toStdString());
+    }
+    return out;
+}
+
+inline QList<QString> convert(const std::vector<std::string> &s) {
+    QList<QString> out;
+    for (const std::string &str: s) {
+        out << QString::fromStdString(str);
+    }
+    return out;
+}
+
+inline int convert(int i) {
+    return i;
+}
+
+
+}

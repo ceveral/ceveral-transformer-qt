@@ -1,0 +1,83 @@
+// User defined class template specialization
+namespace ceveral {
+    inline QList<{{package}}::{{name}}> convert(const std::vector<{{package}}::{{name}}> &v) {
+        return QList<{{package}}::{{name}}>::fromVector(QVector<{{package}}::{{name}}>::fromStdVector(v));
+    }
+
+    inline std::vector<{{package}}::{{name}}> convert(const QList<{{package}}::{{name}}> &v) {
+        return std::vector<{{package}}::{{name}}>(v.begin(), v.end());
+    }
+
+}
+namespace msgpack {
+MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
+  namespace adaptor {
+
+
+  template <> struct convert<{{package}}::{{name}}> {
+    msgpack::object const &operator()(msgpack::object const &o,
+                                      {{package}}::{{name}} &v) const {
+
+      uint32_t count = {{properties.length}};
+
+      if (o.type != msgpack::type::MAP) {
+        throw msgpack::type_error();
+      }
+      if (o.via.map.size != count) {
+        throw msgpack::type_error();
+      }
+
+      while (count-- > 0) {
+        auto p = o.via.map.ptr[count];
+        auto k = p.key.as<std::string>();
+        {{#each properties}}
+        {{#unless @first}}else {{/unless}}if (k == "{{name}}") {
+            {{#if stdType}}
+            {{{type}}} val = ceveral::convert(p.val.as<{{{stdType}}}>());
+            {{else}}
+            {{{type}}} val = p.val.as<{{{type}}}>();
+            {{/if}}
+            v.set_{{name}}(val);
+        }
+        {{/each}}
+      }
+
+      return o;
+    }
+  };
+
+  template <> struct pack<{{package}}::{{name}}> {
+    template <typename Stream>
+    packer<Stream> &operator()(msgpack::packer<Stream> &o,
+                               {{package}}::{{name}} const &v) const {
+
+      o.pack_map({{properties.length}});
+      {{#each properties}}
+      o.pack("{{name}}");
+      o.pack({{#if stdType}}ceveral::convert(v.{{name}}()){{else}}v.{{name}}(){{/if}});
+      {{/each}}
+
+      return o;
+    }
+  };
+
+  template <> struct object_with_zone<{{package}}::{{name}}> {
+    void operator()(msgpack::object::with_zone &o,
+                    {{package}}::{{name}} const &v) const {
+
+      o.type = type::MAP;
+      o.via.map.size = {{properties.length}};
+      o.via.map.ptr = static_cast<msgpack::object_kv *>(
+          o.zone.allocate_align(sizeof(msgpack::object_kv) * o.via.map.size));
+      
+      {{#each properties}}
+      o.via.map.ptr[{{@index}}].key = msgpack::object("{{name}}", o.zone);
+      o.via.map.ptr[{{@index}}].val = msgpack::object({{#if stdType}}ceveral::convert(v.{{name}}()){{else}}v.{{name}}(){{/if}}, o.zone);
+      {{/each}}
+
+    }
+  };
+
+  } // namespace adaptor
+} // MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS)
+} // namespace msgpack

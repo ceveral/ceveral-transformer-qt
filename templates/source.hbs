@@ -1,5 +1,5 @@
 
-#include "{{filename}}.h"
+#include "{{filename}}.hpp"
 
 namespace {{namespace}} { 
 
@@ -8,11 +8,11 @@ namespace {{namespace}} {
 {{name}}::{{name}}(QObject *parent): QObject(parent) { }
 
 {{name}}::{{name}}(const {{name}} &other): {{#each properties}}
-  m_{{name}}(other.{{name}}){{#unless @last}},{{/unless}}{{/each}} {
+  m_{{name}}(other.{{name}}()){{#unless @last}},{{/unless}}{{/each}} {
 
 }
 
-{{name}}::{{name}} &operator=(const {{name}} &other) {
+{{name}} &{{name}}::operator=(const {{name}} &other) {
   if (&other != this) {
 {{#each properties}}
 {{#if pointer}}
@@ -26,7 +26,12 @@ namespace {{namespace}} {
   return *this;
 }
 
-{{name}}::~{{name}} { }
+bool {{name}}::operator==(const {{name}} &other) {
+  return {{#each properties}}m_{{name}} == other.m_{{name}}{{#unless @last}} &&
+    {{/unless}}{{/each}};
+}
+
+{{name}}::~{{name}}() { }
 
 // Properties
 {{#each properties}}
@@ -34,7 +39,7 @@ namespace {{namespace}} {
 {{#if pointer}}
 std::shared_ptr<{{type}}> {{../name}}::{{name}}() const { return m_{{name}}; }
 {{else if ref}}
-{{{type}}} &{{../name}}::{{name}}() const { return m_{{name}}; }
+const {{{type}}} &{{../name}}::{{name}}() const { return m_{{name}}; }
 {{else}}
 {{{type}}} {{../name}}::{{name}}() const { return m_{{name}}; }
 {{/if}}
@@ -42,8 +47,8 @@ std::shared_ptr<{{type}}> {{../name}}::{{name}}() const { return m_{{name}}; }
 {{! Setters}}
 {{#if ref}}
 void {{../name}}::set_{{name}}(const {{{type}}} &{{name}}) { 
-    if (m_{{name}} == name) return;
-    m_{{name}} = name;
+    if (m_{{name}} == {{name}}) return;
+    m_{{name}} = {{name}};
     emit {{name}}Changed();
 }
 {{else if pointer}}
@@ -52,8 +57,8 @@ void {{../name}}::set_{{name}}(std::shared_ptr<{{{type}}}> {{name}} name) {
 }
 {{else}}
 void {{../name}}::set_{{name}}({{{type}}} {{name}}) { 
-    if (m_{{name}} == name) return;
-    m_{{name}} = name;
+    if (m_{{name}} == {{name}}) return;
+    m_{{name}} = {{name}};
     emit {{name}}Changed();
  }
 {{/if}}

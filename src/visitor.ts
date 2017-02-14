@@ -29,7 +29,7 @@ function recordToString(input, sourceTemplate: HandlebarsTemplateDelegate, heade
     })
 
     let header = headerTemplate(input),
-        source = sourceTemplate(input); 
+        source = sourceTemplate(input);
     return [
         { filename: input.filename + '.cpp', buffer: new Buffer(source) },
         { filename: input.filename + '.hpp', buffer: new Buffer(header) }
@@ -59,8 +59,10 @@ export class QtVisitor extends BaseVisitor {
         let sourceBuf = await fs.readFile(Path.resolve(__dirname, "../templates/source.hbs"));
         let headerBuf = await fs.readFile(Path.resolve(__dirname, "../templates/header.hbs"));
         let docBuf = await fs.readFile(Path.resolve(__dirname, "../templates/doc.hbs"));
+        let msgpackBuf = await fs.readFile(Path.resolve(__dirname, "../templates/msgpack.hbs"));
 
         hbs.registerPartial('Document', docBuf.toString());
+        hbs.registerPartial("MsgPack", msgpackBuf.toString())
         let sourceTemplate = hbs.compile(sourceBuf.toString()),
             headerTemplate = hbs.compile(headerBuf.toString());
 
@@ -79,10 +81,20 @@ export class QtVisitor extends BaseVisitor {
             output = _.flatten(records.map(m => recordToString(m, sourceTemplate, headerTemplate)));
         } else {
             result.imports = [...arrayToSet(...result.records.map(m => m.imports))];
+
+            let msgpack = result.records.find(m => m.msgpack )
+            if (msgpack) result.imports.push('"ceveral.hpp"','<msgpack.hpp>')
+
             output = recordToString(result, sourceTemplate, headerTemplate);
 
         }
-        
+
+        let msgpack = result.records.find( m => m.msgpack)
+        if (msgpack) output.push({
+            filename: 'ceveral.hpp',
+            buffer: await fs.readFile(Path.resolve(__dirname, "../templates/ceveral.hbs"))
+        })
+
         return output
     }
 
@@ -93,10 +105,14 @@ export class QtVisitor extends BaseVisitor {
         let records = expression.children
             .filter(m => m.nodeType == Token.Record).map(m => this.visit(m));
 
+        let enums  = expression.children
+            .filter(m => m.nodeType == Token.NumericEnum).map(m => this.visit(m));
+
         return {
             namespace: this.package,
             imports: [],
             records: records,
+            enums: enums,
             filename: Path.basename(this.options.fileName, Path.extname(this.options.fileName))
         }
     }
@@ -104,6 +120,7 @@ export class QtVisitor extends BaseVisitor {
     visitRecord(expression: RecordExpression): any {
         this.imports = new Set();
         return {
+            package: this.package,
             name: expression.name,
             pod: false,
             comment: this.getAnnotation(expression.annotations, 'doc'),
@@ -111,6 +128,7 @@ export class QtVisitor extends BaseVisitor {
             imports: [...this.imports],
             filename: expression.name.toLowerCase(),
             namespace: this.package,
+            msgpack: !!expression.get('qtmsgpack')
         }
 
     }
@@ -140,17 +158,17 @@ export class QtVisitor extends BaseVisitor {
         switch (expression.type) {
             case Type.String:
                 this.imports.add('<QString>');
-                return { type: "QString", ref: true };
-            case Type.Boolean: return { type: "bool", ref: false };
+                return { type: "QString", ref: true, stdType: "std::string" };
+            case Type.Boolean: return { type: "bool", ref: false, stdType:"bool" };
             case Type.Bytes:
                 this.imports.add('<QByteArray>');
-                return { type: "QByteArray", ref: true };
+                return { type: "QByteArray", ref: true, stdType:"std::vector<unsigned char> " };
             case Type.Float:
             case Type.Double:
             case Type.Int:
                 return { type: Type[expression.type].toLowerCase(), ref: false };
             case Type.Uint:
-                return { type: 'unsigned int', ref: false };
+                return { type: 'unsigned int', ref: false, stdType: 'unsigned int' };
             case Type.Date:
                 this.imports.add('<QDateTime>');
                 return { type: 'QDateTime', ref: false };
@@ -159,12 +177,14 @@ export class QtVisitor extends BaseVisitor {
     }
 
     visitImportType(expression: ImportTypeExpression): any {
+
         
-        let base = Path.basename(this.options.fileName, Path.extname(this.options.fileName));
-        let file = (this.options.split ? expression.name.toLowerCase() + '.hpp' : base + '.hpp');
+        //let base = Path.basename(this.options.fileName, Path.extname(this.options.fileName));
+        
+        let file = expression.name.toLowerCase() + ".hpp" // (this.options.split ? expression.name.toLowerCase() + '.hpp' : base + '.hpp');
         this.imports.add(`"${file}"`);
 
-        return { type: expression.name, ref: true };
+        return { type: `${expression.packageName}::${expression.name}`, ref: true };
     }
 
     visitOptionalType(expression: OptionalTypeExpression): any {
@@ -173,7 +193,8 @@ export class QtVisitor extends BaseVisitor {
 
     visitRepeatedType(expression: RepeatedTypeExpression): any {
         this.imports.add("<QList>");
-        return { type: `QList<${this.visit(expression.type).type}>`, ref: true };
+        let type = this.visit(expression.type);
+        return { type: `QList<${type.type}>`, ref: true, stdType: `std::vector<${type.stdType}>` };
     }
 
     visitMapType(expression: MapTypeExpression): any {
@@ -197,6 +218,10 @@ export class QtVisitor extends BaseVisitor {
         e += expression.members.map(m => this.visit(m)).join('\n  ')
         e += '\n)'
         return e;*/
+        return {
+            name: expression.name,
+            members: expression.members.map( m => this.visit(m))
+        }
     }
 
     visitNumericEnumMember(expression: NumericEnumMemberExpression): any {
@@ -209,6 +234,7 @@ export class QtVisitor extends BaseVisitor {
         }
         this.firstMember = false;
         return e*/
+        return expression.name + (expression.value == null ? '' : ' = ' + expression.value)
     }
     visitStringEnum(expression: StringEnumExpression): any {
         /*let e = `type ${ucFirst(expression.name)} string\n\nconst (\n  `

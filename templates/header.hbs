@@ -6,6 +6,15 @@
 #include <QObject>
 
 namespace {{namespace}} {
+
+{{#each enums}}
+enum {{name}} {
+{{#each members}}
+  {{{this}}}{{#unless @last}},{{/unless}}
+{{/each}}
+};
+
+{{/each}}
 {{#each records}} 
 
 {{#if comment}}
@@ -22,6 +31,8 @@ public:
     explicit {{name}}(QObject *parent = 0);
     {{name}}(const {{name}} &other);
     {{name}} &operator=(const {{name}} &other);
+    bool operator==(const {{name}} &other);
+
     ~{{name}}();
 
 {{#each properties}}
@@ -41,6 +52,8 @@ public:
     {{/if}}
     {{#if pointer}}
     std::shared_ptr<{{{type}}}> {{name}}() const;
+    {{else if ref}}
+    const {{{type}}} &{{name}}() const;
     {{else}}
     {{{type}}} {{name}}() const;
     {{/if}}
@@ -63,6 +76,10 @@ private:
 };
 
 {{/each}}
-
-
 }
+
+{{#each records}}
+{{#if msgpack}}
+{{> MsgPack}}
+{{/if}}
+{{/each}}
