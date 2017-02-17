@@ -7,7 +7,7 @@ export default {
 	name: 'Qt',
 	annotations: {
         records: {
-            pod: {
+            qtmsgpack: {
                 arguments: 'boolean'
             },
             doc: {
