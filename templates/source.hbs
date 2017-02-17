@@ -26,14 +26,12 @@ namespace {{namespace}} {
   return *this;
 }
 
-<<<<<<< HEAD
-=======
 bool {{name}}::operator==(const {{name}} &other) {
   return {{#each properties}}m_{{name}} == other.m_{{name}}{{#unless @last}} &&
     {{/unless}}{{/each}};
 }
 
->>>>>>> 2812de4068e14b28f0574a893b01d0104069e9be
+
 {{name}}::~{{name}}() { }
 
 // Properties
@@ -42,11 +40,7 @@ bool {{name}}::operator==(const {{name}} &other) {
 {{#if pointer}}
 std::shared_ptr<{{type}}> {{../name}}::{{name}}() const { return m_{{name}}; }
 {{else if ref}}
-<<<<<<< HEAD
 {{{type}}} {{../name}}::{{name}}() const { return m_{{name}}; }
-=======
-const {{{type}}} &{{../name}}::{{name}}() const { return m_{{name}}; }
->>>>>>> 2812de4068e14b28f0574a893b01d0104069e9be
 {{else}}
 {{{type}}} {{../name}}::{{name}}() const { return m_{{name}}; }
 {{/if}}

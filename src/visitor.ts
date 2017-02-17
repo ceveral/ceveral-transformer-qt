@@ -31,8 +31,8 @@ function recordToString(input, sourceTemplate: HandlebarsTemplateDelegate, heade
     let header = headerTemplate(input),
         source = sourceTemplate(input);
     return [
-        { filename: 'qt' + input.filename + '.cpp', buffer: new Buffer(source) },
-        { filename: 'qt' + input.filename + '.hpp', buffer: new Buffer(header) }
+        { filename:  input.filename + '.cpp', buffer: new Buffer(source) },
+        { filename:  input.filename + '.hpp', buffer: new Buffer(header) }
     ]
 
 }
