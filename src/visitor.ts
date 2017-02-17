@@ -31,8 +31,8 @@ function recordToString(input, sourceTemplate: HandlebarsTemplateDelegate, heade
     let header = headerTemplate(input),
         source = sourceTemplate(input); 
     return [
-        { filename: input.filename + '.cpp', buffer: new Buffer(source) },
-        { filename: input.filename + '.hpp', buffer: new Buffer(header) }
+        { filename: 'qt' + input.filename + '.cpp', buffer: new Buffer(source) },
+        { filename: 'qt' + input.filename + '.hpp', buffer: new Buffer(header) }
     ]
 
 }
@@ -97,19 +97,19 @@ export class QtVisitor extends BaseVisitor {
             namespace: this.package,
             imports: [],
             records: records,
-            filename: Path.basename(this.options.fileName, Path.extname(this.options.fileName))
+            filename: 'qt' + Path.basename(this.options.fileName, Path.extname(this.options.fileName))
         }
     }
 
     visitRecord(expression: RecordExpression): any {
         this.imports = new Set();
         return {
-            name: expression.name,
+            name: "Qt" + expression.name,
             pod: false,
             comment: this.getAnnotation(expression.annotations, 'doc'),
             properties: expression.properties.map(m => this.visit(m)),
             imports: [...this.imports],
-            filename: expression.name.toLowerCase(),
+            filename: "qt" + expression.name.toLowerCase(),
             namespace: this.package,
         }
 
@@ -154,7 +154,10 @@ export class QtVisitor extends BaseVisitor {
             case Type.Date:
                 this.imports.add('<QDateTime>');
                 return { type: 'QDateTime', ref: false };
-            default: return { type: "unimplemented", ref: false };
+            default: 
+                let type = Type[expression.type].toLowerCase();
+
+                return { type: 'q' + type , ref: false };
         }
     }
 
